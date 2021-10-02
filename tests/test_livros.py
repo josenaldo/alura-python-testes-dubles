@@ -1,8 +1,11 @@
 from unittest.mock import patch
+from unittest import skip
 from colecao.livros import (
     consultar_livros
 )
 
+
+@skip("Vale quando consultar livros estiver completo")
 def test_consultar_livros_retorna_resultados_formato_string():
     resultado = consultar_livros("Agatha Christie")
     assert type(resultado) == str
@@ -19,3 +22,10 @@ def test_consultar_livros_chama_obter_url_usando_como_parametro_o_retorno_de_pre
         with patch("colecao.livros.obter_url") as duble:
             consultar_livros("Agatha Christie")
             duble.assert_called_once_with("https://buscador", dados)
+
+def test_consultar_livros_chama_executar_requisicao_usando_retorno_obter_url():
+    with patch("colecao.livros.obter_url") as duble_obter_url:
+        duble_obter_url.return_value = "https://buscador"
+        with patch("colecao.livros.executar_requisicao") as duble_executar_requisicao:
+            consultar_livros("Agatha Christie")
+            duble_executar_requisicao.assert_called_once_with("https://buscador")

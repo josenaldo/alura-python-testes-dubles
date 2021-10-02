@@ -1,12 +1,16 @@
 def consultar_livros(autor):
     dados = preparar_dados_para_requisicao(autor)
-    url = "https://buscador"
-    obter_url(url, dados)
-    return ""
+    url = obter_url("https://buscador", dados)
+    ret = executar_requisicao(url)
+
+    return ret
 
 
 def preparar_dados_para_requisicao(autor):
     pass
 
 def obter_url(url, dados):
+    pass
+
+def executar_requisicao(url):
     pass
