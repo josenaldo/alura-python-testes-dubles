@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, mock_open
 from unittest import skip
 from urllib.error import HTTPError
 
@@ -105,4 +105,14 @@ def test_executar_requisicao_levanta_excecao_do_tipo_http_error():
         with pytest.raises(HTTPError) as excecao:
             executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
 
+        assert "mensagem de erro" in str(excecao.value)
+
+
+@patch("colecao.livros.urlopen")
+def test_executar_requisicao_levanta_excecao_do_tipo_http_error_com_anotacao(duble_de_urlopen):
+    fp = mock_open
+    fp.close = Dummy()
+    duble_de_urlopen.side_effect = HTTPError(Dummy(), Dummy(), "mensagem de erro", Dummy(), fp)
+    with pytest.raises(HTTPError) as excecao:
+        executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert "mensagem de erro" in str(excecao.value)
