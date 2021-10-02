@@ -1,5 +1,9 @@
 from unittest.mock import patch
 from unittest import skip
+from urllib.error import HTTPError
+
+import pytest
+
 from colecao.livros import (
     consultar_livros,
     executar_requisicao
@@ -74,13 +78,31 @@ def test_executar_requisicao_retorna_tipo_string_test_com_stub_return_value():
         resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert type(resultado) == str
 
+
 @patch("colecao.livros.urlopen", return_value=StubHTTPResponse())
 def test_executar_requisicao_retorna_tipo_string_test_com_decorador(duble_de_urlopen):
     resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
     assert type(resultado) == str
+
 
 @patch("colecao.livros.urlopen")
 def test_executar_requisicao_retorna_tipo_string_test_com_decorador_uso_da_variavel(duble_de_urlopen):
     duble_de_urlopen.return_value = StubHTTPResponse()
     resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
     assert type(resultado) == str
+
+
+class Dummy:
+    pass
+
+def duble_url_open_que_levanta_excecao_http_error(url, timeout):
+    fp = mock_open
+    fp.close = Dummy()
+    raise HTTPError(Dummy(), Dummy(), "mensagem de erro", Dummy(), fp)
+
+def test_executar_requisicao_levanta_excecao_do_tipo_http_error():
+    with patch("colecao.livros.urlopen", duble_url_open_que_levanta_excecao_http_error):
+        with pytest.raises(HTTPError) as excecao:
+            executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
+
+        assert "mensagem de erro" in str(excecao.value)
