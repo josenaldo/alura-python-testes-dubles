@@ -1,3 +1,5 @@
+import logging
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 
@@ -18,7 +20,11 @@ def obter_url(url, dados):
 
 
 def executar_requisicao(url):
-    with urlopen(url, timeout=10) as resposta:
-        resultado = resposta.read().decode("utf-8")
-
-    return resultado
+    resultado = ""
+    try:
+        with urlopen(url, timeout=10) as resposta:
+            resultado = resposta.read().decode("utf-8")
+    except HTTPError as e:
+        logging.exception(f"Ao acessar '{url}': {e}")
+    else:
+        return resultado

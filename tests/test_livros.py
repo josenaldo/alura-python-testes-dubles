@@ -1,4 +1,4 @@
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, Mock
 from unittest import skip
 from urllib.error import HTTPError
 
@@ -61,6 +61,7 @@ def duble_url_open(url, timeout):
 
 
 def test_executar_requisicao_retorna_tipo_string_test_com_stub_function():
+
     with patch("colecao.livros.urlopen", duble_url_open):
         resultado = executar_requisicao("https://buscador?author=Jk+Rowlings")
         assert type(resultado) == str
@@ -95,13 +96,13 @@ def test_executar_requisicao_retorna_tipo_string_test_com_decorador_uso_da_varia
 class Dummy:
     pass
 
-def duble_url_open_que_levanta_excecao_http_error(url, timeout):
+def stub_url_open_que_levanta_excecao_http_error(url, timeout):
     fp = mock_open
     fp.close = Dummy()
     raise HTTPError(Dummy(), Dummy(), "mensagem de erro", Dummy(), fp)
-
+"""
 def test_executar_requisicao_levanta_excecao_do_tipo_http_error():
-    with patch("colecao.livros.urlopen", duble_url_open_que_levanta_excecao_http_error):
+    with patch("colecao.livros.urlopen", stub_url_open_que_levanta_excecao_http_error):
         with pytest.raises(HTTPError) as excecao:
             executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
 
@@ -116,3 +117,27 @@ def test_executar_requisicao_levanta_excecao_do_tipo_http_error_com_anotacao(dub
     with pytest.raises(HTTPError) as excecao:
         executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert "mensagem de erro" in str(excecao.value)
+
+@patch("colecao.livros.urlopen")
+def test_executar_requisicao_levanta_excecao_do_tipo_http_error_com_anotacaoe_mock(duble_de_urlopen):
+
+    fp = mock_open
+    fp.close = Mock()
+    duble_de_urlopen.side_effect = HTTPError(Mock(), Mock(), "mensagem de erro", Mock(), fp)
+    with pytest.raises(HTTPError) as excecao:
+        executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
+        assert "mensagem de erro" in str(excecao.value)
+"""
+
+
+def test_executar_requisicao_loga_mensagem_de_erro_de_http_error(caplog):
+    with patch("colecao.livros.urlopen", stub_url_open_que_levanta_excecao_http_error):
+        resultado = executar_requisicao("http://")
+        mensagem_de_erro = "mensagem de erro"
+        assert len(caplog.records) == 1
+
+        for registro in caplog.records:
+            assert mensagem_de_erro in registro.message
+
+
+
