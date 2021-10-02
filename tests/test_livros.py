@@ -48,11 +48,17 @@ class StubHTTPResponse:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
-
-def duble_url_open(url, timeout):
-    return StubHTTPResponse()
+#
+# def duble_url_open(url, timeout):
+#     return StubHTTPResponse()
+#
+# def test_executar_requisicao_retorna_tipo_string():
+#     with patch("colecao.livros.urlopen", duble_url_open):
+#         resultado = executar_requisicao("https://buscador?author=Jk+Rowlings")
+#         assert type(resultado) == str
 
 def test_executar_requisicao_retorna_tipo_string():
-    with patch("colecao.livros.urlopen", duble_url_open):
-        resultado = executar_requisicao("https://buscador?author=Jk+Rowlings")
+    with patch("colecao.livros.urlopen") as duble_url_open:
+        duble_url_open.return_value = StubHTTPResponse()
+        resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert type(resultado) == str
