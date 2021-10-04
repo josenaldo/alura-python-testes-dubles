@@ -6,7 +6,8 @@ import pytest
 
 from colecao.livros import (
     consultar_livros,
-    executar_requisicao
+    executar_requisicao,
+    escrever_em_arquivo,
 )
 
 class StubHTTPResponse:
@@ -151,6 +152,34 @@ def test_executar_requisicao_loga_mensagem_de_erro_de_http_error(stub_de_urlopen
         assert "mensagem de erro" in registro.message
 
 
+class DubleLogging:
+    def __init__(self):
+        self._mensagens = []
+
+    def exception(self, mensagem):
+        self._mensagens.append(mensagem)
+
+    def __repr__(self):
+        return repr(self._mensagens)
+
+    @property
+    def mensagens(self):
+        return self._mensagens
+
+
+
+def duble_make_dirs(diretorio):
+    raise OSError(f"Não foi possível criar diretório '{diretorio}'")
+
+
+def teste_escrever_em_arquivos_registra_excecao_que_nao_foi_possivel_criar_diretorio():
+    arquivo = "/tmp/arquivo"
+    conteudo = "dados de livros"
+    duble_logging = DubleLogging()
+    with patch("colecao.livros.os.makedirs", duble_make_dirs):
+        with patch("colecao.livros.logging", duble_logging):
+            escrever_em_arquivo(arquivo, conteudo)
+            assert "Não foi possível criar diretório '/tmp'" in duble_logging.mensagens
 
 
 

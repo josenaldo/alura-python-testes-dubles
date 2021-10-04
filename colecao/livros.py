@@ -1,4 +1,5 @@
 import logging
+import os
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
@@ -28,3 +29,11 @@ def executar_requisicao(url):
         logging.exception(f"Ao acessar '{url}': {e}")
     else:
         return resultado
+
+def escrever_em_arquivo(arquivo, conteudo):
+    diretorio = os.path.dirname(arquivo)
+
+    try:
+        os.makedirs(diretorio)
+    except OSError:
+        logging.exception(f"Não foi possível criar diretório '{diretorio}'")
