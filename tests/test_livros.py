@@ -499,3 +499,15 @@ def test_baixar_livros_instancia_Consulta_uma_vez(stub_executar_requisicao, resu
     with patch("colecao.livros.Consulta", mock_consulta.Consulta):
         baixar_livros(arquivo, None, None, "Python")
         mock_consulta.verificar()
+
+
+@patch("colecao.livros.executar_requisicao")
+def test_baixar_livros_chama_executar_requisicao_n_vezes(mock_executar_requisicao, resultado_em_duas_paginas):
+    mock_executar_requisicao.side_effect = resultado_em_duas_paginas
+    Resposta.qtd_docs_por_pagina = 3
+    arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
+    baixar_livros(arquivo, None, None, "Python")
+    assert mock_executar_requisicao.call_args_list == [
+        call("https://buscarlivros?q=Python&page=1"),
+        call("https://buscarlivros?q=Python&page=2"),
+    ]
