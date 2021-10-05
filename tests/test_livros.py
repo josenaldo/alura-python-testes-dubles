@@ -183,9 +183,7 @@ def test_escrever_em_arquivo_registra_excecao_que_nao_foi_possivel_criar_diretor
 @patch("colecao.livros.os.makedirs")
 @patch("colecao.livros.logging.exception")
 @patch("colecao.livros.open", side_effect=OSError())
-def test_escrever_em_arquivo_registra_erro_ao_criar_o_arquivo(
-        stub_open, spy_exception, stub_makedirs
-):
+def test_escrever_em_arquivo_registra_erro_ao_criar_o_arquivo(stub_open, spy_exception, stub_makedirs):
     arq = "/bla/arquivo.json"
     escrever_em_arquivo(arq, "dados de livros")
     spy_exception.assert_called_once_with("Não foi possível criar arquivo '%s'" % arq)

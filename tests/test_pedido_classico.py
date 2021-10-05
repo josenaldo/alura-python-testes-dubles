@@ -3,7 +3,7 @@ from _pytest.fixtures import fixture
 from colecao.armazem import Armazem, Pedido
 
 
-class TestePedidoEstado:
+class TestePedidoClassico:
 
     """
     Parte da fase de setup do testes é implementada através dos fixtures
@@ -28,19 +28,19 @@ class TestePedidoEstado:
         pedido = Pedido(catuaba, 50)
 
         # Fase de Exercitar
-        pedido.preencher(armazem);
+        pedido.preencher(armazem)
 
         # Fase de asserções
         assert pedido.esta_preenchido
-        assert 0 == armazem.verifica_inventario(catuaba)
+        assert 0 == armazem.tem_inventario(catuaba)
 
     def teste_pedido_nao_remove_nada_do_armazem_se_nao_tem_o_suficiente(self, armazem, catuaba):
         # Fase de Setup
-        pedido = Pedido(catuaba, 51);
+        pedido = Pedido(catuaba, 51)
 
         # Fase de Exercitar
-        pedido.preencher(armazem);
+        pedido.preencher(armazem)
 
         # Fase de asserções
         assert not pedido.esta_preenchido
-        assert 50 == armazem.verifica_inventario(catuaba)
+        assert 50 == armazem.tem_inventario(catuaba)
