@@ -40,12 +40,43 @@ class TestPedidoMoquista:
         pedido = Pedido(catuaba, 51)
 
         # Setup - expectativas
-        armazem_mock.retira_produto.side_effect = ValueError(f"O produto '{catuaba}' não tem quantidade suficiente no estoque.")
+        armazem_mock.tem_inventario.return_value = False
 
         # Exercício
         pedido.preencher(armazem_mock)
 
-        # Verificação
-        armazem_mock.retira_produto.assert_called_once_with(catuaba, 51)
+        # Verifica se os métodos tem_inventario e retira_produto foram chamados apenas uma vez
+        armazem_mock.tem_inventario.assert_called_once_with(catuaba, 51)
+
+        # verifica a ordem de chamada de tem_inventario e retira_produto
+        expected_calls = [call.tem_inventario(catuaba, 51)]
+        assert armazem_mock.mock_calls == expected_calls
+
+        # verifica se o produto está preenchido
         assert pedido.esta_preenchido == False
 
+    @patch("colecao.armazem.Armazem")
+    @patch("colecao.armazem.ServicoDeEmail")
+    def teste_envio_do_pedido_envia_email_se_o_pedido_nao_for_enviado_pela_primeira_vez(self, servico_de_email_spy, armazem_mock, catuaba):
+        # Setup - dados
+        pedido = Pedido(catuaba, 51)
+        pedido.servico_de_email = servico_de_email_spy
+
+        # Setup - expectativas
+        armazem_mock.tem_inventario.return_value = False
+
+        # Exercício
+        pedido.preencher(armazem_mock)
+
+        # verifica se o serviço de envio de emails foi chamado uma vez
+        servico_de_email_spy.enviar.assert_called_once_with(f"Pedido não enviado: {pedido}")
+
+        # Verifica se os métodos tem_inventario e retira_produto foram chamados apenas uma vez
+        armazem_mock.tem_inventario.assert_called_once_with(catuaba, 51)
+
+        # verifica a ordem de chamada de tem_inventario e retira_produto
+        expected_calls = [call.tem_inventario(catuaba, 51)]
+        assert armazem_mock.mock_calls == expected_calls
+
+        # verifica se o produto está preenchido
+        assert pedido.esta_preenchido == False
