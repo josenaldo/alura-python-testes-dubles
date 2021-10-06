@@ -15,6 +15,7 @@ from colecao.livros import (
     Consulta,
     baixar_livros,
     Resposta,
+    registrar_livros,
 )
 from urllib.error import HTTPError
 
@@ -87,15 +88,19 @@ def test_executar_requisicao_retorna_resultado_tipo_str():
         resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert type(resultado) == str
 
+
+
 def test_executar_requisicao_retorna_resultado_tipo_str():
     with patch("colecao.livros.urlopen", return_value=StubHTTPResponse()):
         resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
         assert type(resultado) == str
 
+
 @patch("colecao.livros.urlopen", return_value=StubHTTPResponse())
 def test_executar_requisicao_retorna_resultado_tipo_str(duble_de_urlopen):
     resultado = executar_requisicao("https://buscarlivros?author=Jk+Rowlings")
     assert type(resultado) == str
+
 """
 
 
@@ -125,11 +130,13 @@ def test_executar_requisicao_loga_mensagem_de_erro_de_http_error(caplog):
         for registro in caplog.records:
             assert mensagem_de_erro in registro.message
 
+
 def test_executar_requisicao_levanta_excecao_do_tipo_http_error():
     with patch("colecao.livros.urlopen", duble_de_urlopen_que_levanta_excecao_http_error):
         with pytest.raises(HTTPError) as excecao:
             executar_requisicao("http://")
         assert "mensagem de erro" in str(excecao.value)
+
 
 
 @patch("colecao.livros.urlopen")
@@ -177,16 +184,18 @@ def test_escrever_em_arquivo_registra_excecao_que_nao_foi_possivel_criar_diretor
     with patch("colecao.livros.os.makedirs", duble_makedirs):
         with patch("colecao.livros.logging", duble_logging):
             escrever_em_arquivo(arquivo, conteudo)
-            assert "Não foi possível criar diretório '/tmp'" in duble_logging.mensagens
+            assert "Não foi possível criar diretório /tmp" in duble_logging.mensagens
 
 
 @patch("colecao.livros.os.makedirs")
 @patch("colecao.livros.logging.exception")
 @patch("colecao.livros.open", side_effect=OSError())
-def test_escrever_em_arquivo_registra_erro_ao_criar_o_arquivo(stub_open, spy_exception, stub_makedirs):
+def test_escrever_em_arquivo_registra_erro_ao_criar_o_arquivo(
+        stub_open, spy_exception, stub_makedirs
+):
     arq = "/bla/arquivo.json"
     escrever_em_arquivo(arq, "dados de livros")
-    spy_exception.assert_called_once_with("Não foi possível criar arquivo '%s'" % arq)
+    spy_exception.assert_called_once_with("Não foi possível criar arquivo %s" % arq)
 
 
 class SpyFp:
@@ -226,7 +235,6 @@ def test_escrever_em_arquivo_chama_write(stub_de_open):
 
     escrever_em_arquivo(arq, conteudo)
     spy_de_fp.write.assert_called_once_with(conteudo)
-
 
 
 @pytest.fixture
@@ -360,6 +368,7 @@ def conteudo_de_4_arquivos():
                  "title": "Pense em Python"
                 }
             ]
+
         }
         """,
         """
@@ -489,7 +498,9 @@ class MockConsulta:
 
 
 @patch("colecao.livros.executar_requisicao")
-def test_baixar_livros_instancia_Consulta_uma_vez(stub_executar_requisicao, resultado_em_duas_paginas):
+def test_baixar_livros_instancia_Consulta_uma_vez(
+        stub_executar_requisicao, resultado_em_duas_paginas
+):
     mock_consulta = MockConsulta()
     stub_executar_requisicao.side_effect = resultado_em_duas_paginas
     Resposta.qtd_docs_por_pagina = 3
@@ -500,12 +511,184 @@ def test_baixar_livros_instancia_Consulta_uma_vez(stub_executar_requisicao, resu
 
 
 @patch("colecao.livros.executar_requisicao")
-def test_baixar_livros_chama_executar_requisicao_n_vezes(mock_executar_requisicao, resultado_em_duas_paginas):
+def test_baixar_livros_chama_executar_requisicao_n_vezes(
+        mock_executar_requisicao, resultado_em_duas_paginas
+):
     mock_executar_requisicao.side_effect = resultado_em_duas_paginas
     Resposta.qtd_docs_por_pagina = 3
     arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
-    baixar_livros(arquivo, None, None, "Python")
+    baixar_livros(arquivo, None, None, "python")
     assert mock_executar_requisicao.call_args_list == [
-        call("https://buscarlivros?q=Python&page=1"),
-        call("https://buscarlivros?q=Python&page=2"),
+        call("https://buscarlivros?q=python&page=1"),
+        call("https://buscarlivros?q=python&page=2"),
     ]
+
+
+@patch("colecao.livros.executar_requisicao")
+def test_baixar_livros_instancia_Resposta_tres_vezes(
+        stub_executar_requisicao, resultado_em_tres_paginas
+):
+    stub_executar_requisicao.side_effect = resultado_em_tres_paginas
+    Resposta.qtd_docs_por_pagina = 3
+    arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
+    with patch("colecao.livros.Resposta") as MockResposta:
+        MockResposta.side_effect = [
+            Resposta(resultado_em_tres_paginas[0]),
+            Resposta(resultado_em_tres_paginas[1]),
+            Resposta(resultado_em_tres_paginas[2]),
+        ]
+        baixar_livros(arquivo, None, None, "python")
+        assert MockResposta.call_args_list == [
+            call(resultado_em_tres_paginas[0]),
+            call(resultado_em_tres_paginas[1]),
+            call(resultado_em_tres_paginas[2]),
+        ]
+
+
+@patch("colecao.livros.executar_requisicao")
+def test_baixar_livros_chama_escrever_em_arquivo_tres_vezes(
+        stub_executar_requisicao, resultado_em_tres_paginas
+):
+    stub_executar_requisicao.side_effect = resultado_em_tres_paginas
+    Resposta.qtd_docs_por_pagina = 3
+    arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
+    with patch("colecao.livros.escrever_em_arquivo") as mock_escrever:
+        mock_escrever.return_value = None
+        baixar_livros(arquivo, None, None, "python")
+        assert mock_escrever.call_args_list == [
+            call(arquivo[0], resultado_em_tres_paginas[0]),
+            call(arquivo[1], resultado_em_tres_paginas[1]),
+            call(arquivo[2], resultado_em_tres_paginas[2]),
+        ]
+
+
+@patch("colecao.livros.executar_requisicao")
+def test_baixar_livros_chama_escrever_em_arquivo_para_pagina_1_e_3(
+        stub_executar_requisicao, resultado_em_tres_paginas_erro_na_pagina_2
+):
+    stub_executar_requisicao.side_effect = resultado_em_tres_paginas_erro_na_pagina_2
+    Resposta.qtd_docs_por_pagina = 3
+    arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
+    with patch("colecao.livros.escrever_em_arquivo") as mock_escrever:
+        mock_escrever.side_effect = [None, None]
+        baixar_livros(arquivo, None, None, "python")
+        assert mock_escrever.call_args_list == [
+            call(arquivo[0], resultado_em_tres_paginas_erro_na_pagina_2[0]),
+            call(arquivo[2], resultado_em_tres_paginas_erro_na_pagina_2[2]),
+        ]
+
+
+@patch("colecao.livros.executar_requisicao")
+def test_baixar_livros_chama_escrever_em_arquivo_para_pagina_2_e_3(
+        stub_executar_requisicao, resultado_em_tres_paginas_erro_na_pagina_1
+):
+    stub_executar_requisicao.side_effect = resultado_em_tres_paginas_erro_na_pagina_1
+    Resposta.qtd_docs_por_pagina = 3
+    arquivo = ["/tmp/arquivo1", "/tmp/arquivo2", "/tmp/arquivo3"]
+    with patch("colecao.livros.escrever_em_arquivo") as mock_escrever:
+        mock_escrever.side_effect = [None, None]
+        baixar_livros(arquivo, None, None, "python")
+        assert mock_escrever.call_args_list == [
+            call(arquivo[1], resultado_em_tres_paginas_erro_na_pagina_1[1]),
+            call(arquivo[2], resultado_em_tres_paginas_erro_na_pagina_1[2]),
+        ]
+
+
+def fake_inserir_registros(dados):
+    return len(dados)
+
+
+def test_registrar_livros_chama_ler_arquivo_3_vezes(resultado_em_tres_paginas):
+    arquivos = [
+        "/tmp/arq1",
+        "/tmp/arq2",
+        "/tmp/arq3",
+    ]
+    with patch("colecao.livros.ler_arquivo") as mock_ler_arquivo:
+        mock_ler_arquivo.side_effect = resultado_em_tres_paginas
+        registrar_livros(arquivos, fake_inserir_registros)
+        assert mock_ler_arquivo.call_args_list == [
+            call(arquivos[0]),
+            call(arquivos[1]),
+            call(arquivos[2]),
+        ]
+
+
+@patch("colecao.livros.ler_arquivo")
+def test_registrar_livros_instancia_Resposta_4_vezes(
+        stub_ler_arquivo, conteudo_de_4_arquivos
+):
+    stub_ler_arquivo.side_effect = conteudo_de_4_arquivos
+    arquivos = [
+        "/tmp/arquivos1",
+        "/tmp/arquivos2",
+        "/tmp/arquivos3",
+        "/tmp/arquivos4",
+    ]
+    with patch("colecao.livros.Resposta") as MockResposta:
+        MockResposta.side_effect = [
+            Resposta(conteudo_de_4_arquivos[0]),
+            Resposta(conteudo_de_4_arquivos[1]),
+            Resposta(conteudo_de_4_arquivos[2]),
+            Resposta(conteudo_de_4_arquivos[3]),
+        ]
+        registrar_livros(arquivos, fake_inserir_registros)
+        assert MockResposta.call_args_list == [
+            call(conteudo_de_4_arquivos[0]),
+            call(conteudo_de_4_arquivos[1]),
+            call(conteudo_de_4_arquivos[2]),
+            call(conteudo_de_4_arquivos[3]),
+        ]
+
+
+@patch("colecao.livros.ler_arquivo")
+def test_registrar_livros_chama_inserir_registros(
+        stub_ler_arquivo, conteudo_de_4_arquivos
+):
+    arquivos = [
+        "/tmp/arquivos1",
+        "/tmp/arquivos2",
+        "/tmp/arquivos3",
+    ]
+    conteudo_de_3_arquivos = conteudo_de_4_arquivos[1:]
+    stub_ler_arquivo.side_effect = conteudo_de_3_arquivos
+
+    qtd = registrar_livros(arquivos, fake_inserir_registros)
+    assert qtd == 12
+
+
+class FakeDB:
+    def __init__(self):
+        self._registros = []
+
+    def inserir_registros(self, dados):
+        self._registros.extend(dados)
+        return len(dados)
+
+
+@patch("colecao.livros.ler_arquivo")
+def test_registrar_livros_insere_12_registros_na_base_de_dados(
+        stub_ler_arquivo, resultado_em_tres_paginas
+):
+    arquivos = ["/tmp/arq1", "/tmp/arq2", "/tmp/arq3"]
+    stub_ler_arquivo.side_effect = resultado_em_tres_paginas
+    fake_db = FakeDB()
+    qtd = registrar_livros(arquivos, fake_db.inserir_registros)
+    assert qtd == 8
+    assert fake_db._registros[0] == {
+        "author": "Luciano Ramalho",
+        "title": "Python Fluente",
+    }
+
+
+@patch("colecao.livros.ler_arquivo")
+def test_registrar_livros_insere_5_registros(
+        stub_ler_arquivo, resultado_em_duas_paginas
+):
+    stub_ler_arquivo.side_effect = resultado_em_duas_paginas
+    arquivos = ["/tmp/arq1", "/tmp/arq2"]
+
+    fake_db = MagicMock()
+    fake_db.inserir_registros = fake_inserir_registros
+    qtd = registrar_livros(arquivos, fake_db.inserir_registros)
+    assert qtd == 5
